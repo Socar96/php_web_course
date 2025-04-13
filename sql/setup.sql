@@ -19,6 +19,13 @@ CREATE TABLE contacts(
     FOREIGN KEY(user_id) REFERENCES users(id)
 );
 
+CREATE TABLE contact_address(
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    address VARCHAR(255),
+    user_id INT NOT NULL,
+    FOREIGN KEY(user_id) REFERENCES contacts(id)
+);
+
 -- INSERT INTO contacts (name, phone_number) VALUES ("Pepe", "122334556");
 -- INSERT INTO contacts (name, phone_number) VALUES ("Meh", "127842");
 -- INSERT INTO contacts (name, phone_number) VALUES ("test", "97685");

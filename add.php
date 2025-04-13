@@ -12,20 +12,41 @@ if (!isset($_SESSION["user"])) {
 }
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-  if ( (empty($_POST["name"])) || (empty($_POST["phone_number"])) ) {
+  if ( (empty($_POST["name"])) || 
+       (empty($_POST["phone_number"])) || 
+       (empty($_POST["address"])) ) {
     $error = "Please fill all fields.";
   }
   else if ( strlen($_POST["phone_number"]) < 9 ) {
     $error = "Phone number must be at least 9 characters.";
   }
   else {
-    $name = $_POST["name"];
-    $phoneNumber = $_POST["phone_number"];
-    // Validate and avoid SQL injection
-    $statement = $conn->prepare("INSERT INTO contacts(user_id, name, phone_number) VALUES ({$_SESSION["user"]["id"]}, :name, :phone_number)");
+    /**< Start DB transaction */
+    $conn->beginTransaction();
+
+    /**< Add contact information */
+    $statement = $conn->prepare(
+      "INSERT INTO contacts(user_id, name, phone_number) 
+      VALUES (:user_id, :name, :phone_number)");
+    $statement->bindParam(":user_id", $_SESSION["user"]["id"]);
     $statement->bindParam(":name", $_POST["name"]);
-    $statement->bindParam(":phone_number", $_POST["phone_number"]); 
+    $statement->bindParam(":phone_number", $_POST["phone_number"]);
     $statement->execute();
+
+    /**< Get last contact ID inserted */
+    $lastContactId = $conn->lastInsertId();
+    
+    /**< Add address associated to a contact */
+    $statement = $conn->prepare(
+      "INSERT INTO contact_address(address, user_id)
+      VALUES (:address, :user_id)"
+    );
+    $statement->bindParam(":address", $_POST["address"]);
+    $statement->bindParam(":user_id", $lastContactId);
+    $statement->execute();
+
+    /**< Confirm DB changes */
+    $conn->commit();
 
     $_SESSION["flash"] = ["message" => "Contact {$_POST['name']} added."];
   
@@ -63,6 +84,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
               <div class="col-md-6">
                 <input id="phone_number" type="tel" class="form-control" name="phone_number" required autocomplete="phone_number" autofocus>
+              </div>
+            </div>
+
+            <div class="mb-3 row">
+              <label for="Address" class="col-md-4 col-form-label text-md-end">Address</label>
+
+              <div class="col-md-6">
+                <input id="address" type="text" class="form-control" name="address" required autocomplete="address" autofocus>
               </div>
             </div>
 
